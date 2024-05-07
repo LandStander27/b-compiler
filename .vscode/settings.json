@@ -1,0 +1,11 @@
+{
+	"files.associations": {
+		"*.php": "php",
+		"cs": "C#",
+		"py": "Python",
+		"au3": "AutoIT",
+		"*.b": "plaintext",
+		"limits.h": "c",
+		"stdio.h": "c"
+	}
+}
