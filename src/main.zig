@@ -39,6 +39,7 @@ pub fn main() !void {
 		\\-v, --verbose						Increase output verbosity.
 		\\--keepc <output_file>				Output generated C code to file.
 		\\-o, --output <output_file>		Specify the output file.
+		\\--run								Run the program after compilation.
 		\\<input_file>						Input file. (file.b)
 		\\
 	);
@@ -182,5 +183,38 @@ pub fn main() !void {
 	}
 
 	_ = try gcc.kill();
+
+	if (res.args.run != 0) {
+		try defs.log_with_prefix(defs.colors.cyan ++ "   Running" ++ defs.colors.reset, "{s}", .{output});
+
+		var binary = std.ArrayList(u8).init(alloc);
+		defer binary.deinit();
+
+		try binary.appendSlice("./");
+		try binary.appendSlice(output);
+
+		var proc = std.process.Child.init(&[_][]const u8{ binary.items }, alloc);
+
+		proc.stdin_behavior = .Inherit;
+		proc.stdout_behavior = .Inherit;
+		proc.stderr_behavior = .Inherit;
+
+		// proc.spawn() catch |e| {
+		// 	log.err("Failed to run {s}: {s}", .{output, @errorName(e)});
+		// };
+
+		switch (try proc.spawnAndWait()) {
+			.Exited => |code| {
+				if (code != 0) {
+					log.warn("Program exited with code: {d}", .{code});
+				}
+			},
+			else => |err| {
+				log.err("Error: {any}", .{err});
+				return error.ProcessFailed;
+			}
+		}
+		_ = try proc.kill();
+	}
 
 }

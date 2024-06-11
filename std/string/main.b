@@ -1,4 +1,4 @@
-!c #include <string.h>
+@c #include <string.h>
 
 use "std/heap";
 use "std/fmt";
@@ -39,7 +39,7 @@ String String.from(const u8* s) {
 
 String String.with_data(u8* s) {
 	String v = {
-		!c strlen(__s__),
+		@c strlen(__s__),
 		0,
 		s,
 	};
@@ -74,12 +74,12 @@ nulltype String.append_format(String* s, const u8* format, ...) {
 
 	i64 ret = 0;
 	{
-		!c va_list args;
-		!c va_start(args, __format__);
+		@c va_list args;
+		@c va_start(args, __format__);
 
-		ret = !c vsnprintf (__String__get__(&__buf__), __buf__.__cap__, __format__, args);
+		ret = @c vsnprintf (__String__get__(&__buf__), __buf__.__cap__, __format__, args);
 
-		!c va_end(args);
+		@c va_end(args);
 	}
 
 	if ((u64)ret >= buf->cap) {
@@ -87,12 +87,12 @@ nulltype String.append_format(String* s, const u8* format, ...) {
 
 		{
 			println("here");
-			!c va_list args;
-			!c va_start(args, __format__);
+			@c va_list args;
+			@c va_start(args, __format__);
 
-			ret = !c vsnprintf (__String__get__(&__buf__), __buf__.__cap__, __format__, args);
+			ret = @c vsnprintf (__String__get__(&__buf__), __buf__.__cap__, __format__, args);
 
-			!c va_end(args);
+			@c va_end(args);
 		}
 
 	}
@@ -109,7 +109,7 @@ u8* String.getchar(String* v, u64 index) {
 }
 
 i64 String.find(String* v, const u8* s) {
-	u8* i = !c strstr(
+	u8* i = @c strstr(
 		String.get(v), s);
 	if (i == 0) {
 		return -1;
@@ -123,7 +123,7 @@ bool String.contains(String* v, const u8* s) {
 }
 
 bool String.compare(String* s, const u8* s2) {
-	return !c strcmp(
+	return @c strcmp(
 		String.get(s), s2) == 0;
 }
 

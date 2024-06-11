@@ -24,6 +24,7 @@ const TokenType = enum {
 	Char,
 	Compare,
 	CLiteral,
+	Comment,
 	Defer,
 	End,
 };
@@ -78,7 +79,7 @@ fn parse_c_literal(alloc: std.mem.Allocator, source: []const u8, current_index: 
 	var len: u64 = 0;
 	var i: u64 = current_index;
 
-	if (source[i] != '!' or source[i+1] != 'c' or source[i+2] != ' ') {
+	if (source[i] != '@' or source[i+1] != 'c' or source[i+2] != ' ') {
 		return error.InvalidCKeyword;
 	}
 
@@ -271,6 +272,39 @@ fn parse_defer(alloc: std.mem.Allocator, source: []const u8, current_index: u64)
 
 }
 
+fn parse_comment(alloc: std.mem.Allocator, source: []const u8, current_index: u64) !struct { t: Token, amount_processed: u64 } {
+	var str: []u8 = try alloc.alloc(u8, 16);
+	errdefer alloc.free(str);
+
+	var len: u64 = 0;
+	var i: u64 = current_index;
+
+	while (true) : (i += 1) {
+
+		if (len >= str.len) {
+			str = try alloc.realloc(str, str.len * 2);
+		}
+
+		str[len] = source[i];
+		len += 1;
+
+		if (source[i] == '\n') {
+			break;
+		}
+	}
+
+	str = try alloc.realloc(str, len);
+
+	return .{
+		.t = Token {
+			.typ = .Comment,
+			.value = str,
+			.line_num = 0,
+		},
+		.amount_processed = i - current_index,
+	};
+}
+
 const ParseMode = enum {
 	Normal,
 	StructDef,
@@ -318,7 +352,7 @@ pub fn format_tokens(alloc: std.mem.Allocator, tokens: *std.ArrayList(Token), cu
 				} else if (std.mem.eql(u8, token.value, "any")) {
 					try s.appendSlice("void*");
 				} else if (std.mem.eql(u8, token.value, "null")) {
-					try s.appendSlice("NULL");
+					try s.appendSlice("((void*)0)");
 				} else if (std.mem.eql(u8, token.value, "struct")) {
 
 					try s.appendSlice("typedef struct ");
@@ -639,6 +673,13 @@ pub fn parse_source(alloc: std.mem.Allocator, source: []const u8, source_name: [
 		} else if (c == '-' and source[current_index+1] == '>') {
 			try tokens.append(Token { .typ = .Operator, .value = try alloc_with_default(u8, 1, '.', alloc), .line_num = current_line });
 			current_index += 1;
+		} else if (c == '/' and source[current_index+1] == '/') {
+			var str = parse_comment(alloc, source, current_index) catch null;
+			if (str != null) {
+				str.?.t.line_num = current_line;
+				current_index += str.?.amount_processed;
+				try tokens.append(str.?.t);
+			}
 		} else {
 			caught = false;
 		}
@@ -673,7 +714,7 @@ pub fn parse_source(alloc: std.mem.Allocator, source: []const u8, source_name: [
 
 		if (!caught) {
 
-			if (c == '!') {
+			if (c == '@') {
 				var str: ?Token = parse_c_literal(alloc, source, current_index) catch null;
 				if (str != null) {
 					str.?.line_num = current_line;
