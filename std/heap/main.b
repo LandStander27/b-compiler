@@ -1,10 +1,10 @@
 @c #include <stdlib.h>
 
-@c __u64__ amount_allocated = 0;
+u64 Heap.amount_allocated = 0;
 
 any alloc(u64 size) {
 	@c void* __ptr__ = malloc(__size__);
-	@c amount_allocated += 1;
+	Heap.amount_allocated += 1;
 	return ptr;
 }
 
@@ -15,5 +15,5 @@ any realloc(any ptr, u64 size) {
 
 nulltype free(any ptr) {
 	@c free(__ptr__);
-	@c amount_allocated -= 1;
+	Heap.amount_allocated -= 1;
 }

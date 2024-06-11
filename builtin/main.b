@@ -2,6 +2,7 @@
 @c #include <stdio.h>
 @c #include <stdarg.h>
 @c #include <string.h>
+@c #include <stdlib.h>
 
 @c typedef int __i32__;
 @c typedef float __f32__;
@@ -15,6 +16,11 @@
 @c typedef __i32__ __bool__;
 @c #define __true__ 1
 @c #define __false__ 0
+
+@c [[noreturn]] void __exit__(__i32__ __code__)
+{
+	@c exit(__code__);
+}
 
 nulltype print(u8* format, ...) {
 	@c va_list args;
@@ -42,10 +48,7 @@ nulltype main();
 	main();
 	@c free_args();
 
-	u64 amount_allocated =
-		@c amount_allocated;
-
-	if (amount_allocated != 0) {
+	if (Heap.amount_allocated != 0) {
 		println("Memory leak detected");
 		return 1;
 	}
