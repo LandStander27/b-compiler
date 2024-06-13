@@ -161,7 +161,7 @@ pub fn main() !void {
 
 	gcc.stdin_behavior = .Pipe;
 	gcc.stdout_behavior = .Pipe;
-	gcc.stderr_behavior = .Inherit;
+	gcc.stderr_behavior = .Pipe;
 
 	try gcc.spawn();
 
@@ -170,19 +170,50 @@ pub fn main() !void {
 	gcc.stdin_behavior = .Ignore;
 	gcc.stdin = null;
 
-	switch (try gcc.wait()) {
-		.Exited => |code| {
-			if (code != 0) {
-				log.warn("GCC exited with code: {d}", .{code});
-			}
-		},
-		else => |err| {
-			log.err("Error: {any}", .{err});
-			return error.ProcessFailed;
-		}
+	const wait_res = std.posix.waitpid(gcc.id, 0);
+
+	if (wait_res.status != 0) {
+		log.warn("GCC exited with code: {d}", .{wait_res.status});
 	}
 
-	_ = try gcc.kill();
+	// switch (try gcc.wait()) {
+	// 	.Exited => |code| {
+	// 		if (code != 0) {
+	// 			log.warn("GCC exited with code: {d}", .{code});
+	// 		}
+	// 	},
+	// 	else => |err| {
+	// 		log.err("Error: {any}", .{err});
+	// 		return error.ProcessFailed;
+	// 	}
+	// }
+
+	const gcc_output = try gcc.stderr.?.readToEndAlloc(alloc, 8096);
+	defer alloc.free(gcc_output);
+
+	try println("{s}", .{gcc_output});
+
+	_ = gcc.kill() catch |e| {
+		switch (e) {
+			error.AlreadyTerminated => {},
+			else => return e,
+		}
+	};
+
+    if (gcc.stdin) |*stdin| {
+        stdin.close();
+        gcc.stdin = null;
+    }
+    if (gcc.stdout) |*stdout| {
+        stdout.close();
+        gcc.stdout = null;
+    }
+    if (gcc.stderr) |*stderr| {
+        stderr.close();
+        gcc.stderr = null;
+    }
+
+	// try println("{any}, {any}, {any}", .{gcc.stdin, gcc.stdout, gcc.stderr});
 
 	if (res.args.run != 0) {
 		try defs.log_with_prefix(defs.colors.cyan ++ "   Running" ++ defs.colors.reset, "{s}", .{output});

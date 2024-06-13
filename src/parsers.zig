@@ -11,7 +11,7 @@ const println = defs.println;
 const alloc_with_default = defs.alloc_with_default;
 const alloc_with_default_slice = defs.alloc_with_default_slice;
 
-const keywords = [_][]const u8{ "return", "const", "struct", "use", "sizeof", "inline", "...", "if", "else", "for", "while", "defer", "null", "nulltype", "any" };
+const keywords = [_][]const u8{ "return", "const", "struct", "use", "sizeof", "inline", "...", "if", "else", "for", "while", "defer", "null", "nulltype", "any", "noreturn" };
 
 const TokenType = enum {
 	Beggining,
@@ -353,6 +353,8 @@ pub fn format_tokens(alloc: std.mem.Allocator, tokens: *std.ArrayList(Token), cu
 					try s.appendSlice("void*");
 				} else if (std.mem.eql(u8, token.value, "null")) {
 					try s.appendSlice("((void*)0)");
+				} else if (std.mem.eql(u8, token.value, "noreturn")) {
+					try s.appendSlice("[[noreturn]] void");
 				} else if (std.mem.eql(u8, token.value, "struct")) {
 
 					try s.appendSlice("typedef struct ");
@@ -508,11 +510,33 @@ pub fn format_tokens(alloc: std.mem.Allocator, tokens: *std.ArrayList(Token), cu
 			.Ident => {
 
 				try s.appendSlice("__");
-				const buf = try alloc.alloc(u8, token.value.len + (std.mem.count(u8, token.value, ".")));
-				defer alloc.free(buf);
 
-				_ = std.mem.replace(u8, token.value, ".", "__", buf);
-				try s.appendSlice(buf);
+				var result = std.ArrayList(u8).init(alloc);
+				defer result.deinit();
+
+				try result.appendSlice(token.value);
+
+				if (std.mem.count(u8, result.items, "_") > 0) {
+					const buf = try alloc.alloc(u8, result.items.len + (std.mem.count(u8, result.items, "_") * 2));
+					defer alloc.free(buf);
+
+					_ = std.mem.replace(u8, result.items, "_", "___", buf);
+					try result.resize(0);
+
+					try result.appendSlice(buf);
+				}
+
+				if (std.mem.count(u8, result.items, ".") > 0) {
+					const buf = try alloc.alloc(u8, result.items.len + (std.mem.count(u8, result.items, ".")));
+					defer alloc.free(buf);
+
+					_ = std.mem.replace(u8, result.items, ".", "__", buf);
+					try result.resize(0);
+
+					try result.appendSlice(buf);
+				}
+
+				try s.appendSlice(result.items);
 				try s.appendSlice("__");
 
 			},

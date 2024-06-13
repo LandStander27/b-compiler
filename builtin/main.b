@@ -17,8 +17,7 @@
 @c #define __true__ 1
 @c #define __false__ 0
 
-@c [[noreturn]] void __exit__(__i32__ __code__)
-{
+noreturn exit(i32 code) {
 	@c exit(__code__);
 }
 

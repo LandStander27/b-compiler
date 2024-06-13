@@ -9,7 +9,7 @@ any alloc(u64 size) {
 }
 
 any realloc(any ptr, u64 size) {
-	@c void* __new_ptr__ = realloc(__ptr__, __size__);
+	@c void* __new___ptr__ = realloc(__ptr__, __size__);
 	return new_ptr;
 }
 
