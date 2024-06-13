@@ -48,7 +48,7 @@ nulltype main();
 	@c free_args();
 
 	if (Heap.amount_allocated != 0) {
-		println("Memory leak detected");
+		println("%s     error%s Memory leaks: %d", "\x1b[31m", "\x1b[0m", Heap.amount_allocated);
 		return 1;
 	}
 

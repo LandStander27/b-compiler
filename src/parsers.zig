@@ -356,24 +356,37 @@ pub fn format_tokens(alloc: std.mem.Allocator, tokens: *std.ArrayList(Token), cu
 				} else if (std.mem.eql(u8, token.value, "noreturn")) {
 					try s.appendSlice("[[noreturn]] void");
 				} else if (std.mem.eql(u8, token.value, "struct")) {
+					if (tokens.items[i+1].typ.? == .Ident) {
+						try s.appendSlice("typedef struct ");
+						const name_of_struct = tokens.items[i+1].value;
 
-					try s.appendSlice("typedef struct ");
+						i += 2;
+						const ending_struct = .{ .typ = .Seperator, .value = try alloc_with_default(u8, 1, ';', alloc), .line_num = 0 };
+						defer alloc.free(ending_struct.value);
 
-					const name_of_struct = tokens.items[i+1].value;
+						const struc = try format_tokens(alloc, tokens, i, ending_struct, indent, source_name, .StructDef);
+						defer struc.s.deinit();
 
-					i += 2;
-					const ending_struct = .{ .typ = .Seperator, .value = try alloc_with_default(u8, 1, ';', alloc), .line_num = 0 };
-					defer alloc.free(ending_struct.value);
+						try s.appendSlice(struc.s.items);
+						try s.appendSlice("__");
+						try s.appendSlice(name_of_struct);
+						try s.appendSlice("__;\n");
 
-					const struc = try format_tokens(alloc, tokens, i, ending_struct, indent, source_name, .StructDef);
-					defer struc.s.deinit();
+						i += struc.amount_processed;
+					} else {
+						try s.appendSlice("struct ");
+						i += 1;
+						const ending_struct = .{ .typ = .Seperator, .value = try alloc_with_default(u8, 1, ';', alloc), .line_num = 0 };
+						defer alloc.free(ending_struct.value);
 
-					try s.appendSlice(struc.s.items);
-					try s.appendSlice("__");
-					try s.appendSlice(name_of_struct);
-					try s.appendSlice("__;\n");
+						const struc = try format_tokens(alloc, tokens, i, ending_struct, indent, source_name, .StructDef);
+						defer struc.s.deinit();
 
-					i += struc.amount_processed;
+						try s.appendSlice(struc.s.items);
+						// try s.appendSlice("\n");
+
+						i += struc.amount_processed;
+					}
 
 				} else if (std.mem.eql(u8, token.value, "use")) {
 

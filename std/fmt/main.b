@@ -19,6 +19,15 @@ i32 string_to_i32(const u8* s) {
 	@c return atoi(__s__);
 }
 
+const u8* fmt.color.red = "\x1b[31m";
+const u8* fmt.color.green = "\x1b[32m";
+const u8* fmt.color.yellow = "\x1b[33m";
+const u8* fmt.color.blue = "\x1b[34m";
+const u8* fmt.color.magenta = "\x1b[35m";
+const u8* fmt.color.cyan = "\x1b[36m";
+const u8* fmt.color.white = "\x1b[37m";
+const u8* fmt.color.reset = "\x1b[0m";
+
 u8* format_alloc(const u8* format, ...) {
 	u8* s = 0;
 
