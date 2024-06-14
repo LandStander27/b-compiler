@@ -16,11 +16,21 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const exe = b.addExecutable(.{
-        .name = "a",
+        .name = "bc",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
+
+	const target_output = b.addInstallArtifact(exe, .{
+		.dest_dir = .{
+			.override = .{
+				.custom = "../bin",
+			},
+		},
+	});
+
+	b.getInstallStep().dependOn(&target_output.step);
 
 	const clap = b.dependency("clap", .{});
 	exe.root_module.addImport("clap", clap.module("clap"));

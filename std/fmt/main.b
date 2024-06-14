@@ -19,6 +19,10 @@ i32 string_to_i32(const u8* s) {
 	@c return atoi(__s__);
 }
 
+i32 string_to_f64(const u8* s) {
+	@c return atof(__s__);
+}
+
 const u8* fmt.color.red = "\x1b[31m";
 const u8* fmt.color.green = "\x1b[32m";
 const u8* fmt.color.yellow = "\x1b[33m";

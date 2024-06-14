@@ -3,3 +3,4 @@ test.b
 test
 zig-out
 .zig-cache
+bin

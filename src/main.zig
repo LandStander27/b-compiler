@@ -191,7 +191,7 @@ pub fn main() !void {
 	const gcc_output = try gcc.stderr.?.readToEndAlloc(alloc, 8096);
 	defer alloc.free(gcc_output);
 
-	try println("{s}", .{gcc_output});
+	try print("{s}", .{gcc_output});
 
 	_ = gcc.kill() catch |e| {
 		switch (e) {

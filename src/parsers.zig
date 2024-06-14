@@ -11,7 +11,7 @@ const println = defs.println;
 const alloc_with_default = defs.alloc_with_default;
 const alloc_with_default_slice = defs.alloc_with_default_slice;
 
-const keywords = [_][]const u8{ "return", "const", "struct", "use", "sizeof", "inline", "...", "if", "else", "for", "while", "defer", "null", "nulltype", "any", "noreturn" };
+const keywords = [_][]const u8{ "return", "const", "struct", "use", "sizeof", "inline", "...", "if", "else", "for", "while", "defer", "null", "nulltype", "any", "noreturn", "and", "or" };
 
 const TokenType = enum {
 	Beggining,
@@ -353,6 +353,10 @@ pub fn format_tokens(alloc: std.mem.Allocator, tokens: *std.ArrayList(Token), cu
 					try s.appendSlice("void*");
 				} else if (std.mem.eql(u8, token.value, "null")) {
 					try s.appendSlice("((void*)0)");
+				} else if (std.mem.eql(u8, token.value, "and")) {
+					try s.appendSlice("&&");
+				} else if (std.mem.eql(u8, token.value, "or")) {
+					try s.appendSlice("||");
 				} else if (std.mem.eql(u8, token.value, "noreturn")) {
 					try s.appendSlice("[[noreturn]] void");
 				} else if (std.mem.eql(u8, token.value, "struct")) {
@@ -370,7 +374,11 @@ pub fn format_tokens(alloc: std.mem.Allocator, tokens: *std.ArrayList(Token), cu
 						try s.appendSlice(struc.s.items);
 						try s.appendSlice("__");
 						try s.appendSlice(name_of_struct);
-						try s.appendSlice("__;\n");
+						try s.appendSlice("__");
+
+						const s2 = try std.fmt.allocPrint(alloc, "; // Source: {s} ; Line {d}\n", .{ source_name, token.line_num });
+						defer alloc.free(s2);
+						try s.appendSlice(s2);
 
 						i += struc.amount_processed;
 					} else {
@@ -443,7 +451,7 @@ pub fn format_tokens(alloc: std.mem.Allocator, tokens: *std.ArrayList(Token), cu
 
 							log.debug("Parsing source", .{});
 							var tokens2 = try parse_source(alloc, source, full.items);
-							full.deinit();
+							defer full.deinit();
 
 							defer {
 								for (tokens2.items) |token2| {
@@ -611,12 +619,18 @@ pub fn format_tokens(alloc: std.mem.Allocator, tokens: *std.ArrayList(Token), cu
 						try s.appendSlice("\n");
 					}
 				} else if (std.mem.eql(u8, token.value, ";")) {
-					try s.appendSlice(";\n");
+					const s2 = try std.fmt.allocPrint(alloc, "; // Source: {s} ; Line {d}\n", .{ source_name, token.line_num });
+					defer alloc.free(s2);
+					try s.appendSlice(s2);
 				} else if (std.mem.eql(u8, token.value, ",")) {
 					if (mode == .StructDef) {
-						try s.appendSlice(";\n");
+						const s2 = try std.fmt.allocPrint(alloc, "; // Source: {s} ; Line {d}\n", .{ source_name, token.line_num });
+						defer alloc.free(s2);
+						try s.appendSlice(s2);
 					} else {
-						try s.appendSlice(",");
+						const s2 = try std.fmt.allocPrint(alloc, ", // Source: {s} ; Line {d}\n", .{ source_name, token.line_num });
+						defer alloc.free(s2);
+						try s.appendSlice(s2);
 					}
 				} else {
 					try s.appendSlice(token.value);
@@ -656,7 +670,7 @@ const ParseError = error {
 
 pub fn parse_source(alloc: std.mem.Allocator, source: []const u8, source_name: []const u8) !std.ArrayList(Token) {
 
-	var current_line: u64 = 0;
+	var current_line: u64 = 1;
 	var current_index: u64 = 0;
 
 	var tokens = std.ArrayList(Token).init(alloc);
